@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/fellloyal/MyNodeServer#readme",
   "dependencies": {
+    "log4js": "^3.0.0",
     "mqtt": "^2.18.2"
   }
 }
