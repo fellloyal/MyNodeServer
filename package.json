@@ -1,0 +1,22 @@
+{
+  "name": "nodeserver",
+  "version": "1.0.0",
+  "description": "测试node服务 20180716 first clone",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fellloyal/MyNodeServer.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fellloyal/MyNodeServer/issues"
+  },
+  "homepage": "https://github.com/fellloyal/MyNodeServer#readme",
+  "dependencies": {
+    "mqtt": "^2.18.2"
+  }
+}
