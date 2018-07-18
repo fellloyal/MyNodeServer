@@ -5,6 +5,7 @@ var log4js = require('log4js');//生成日志对象
 
 var MongoClient = require('mongodb').MongoClient; //生成MongoDb对象
 
+var mysql      = require('mysql');//生成mysql对象
 
 //配置日志输出
 log4js.configure({
@@ -29,6 +30,26 @@ log4js.configure({
 
 var logger = log4js.getLogger('info');
 logger.info("------------------启动服务程序--------------------------")
+
+
+
+
+var connection = mysql.createConnection({
+  host     : 'localhost',
+  user     : 'root',
+  password : 'root',
+  database : 'OilCloudDB'
+});
+ 
+connection.connect(function(){
+  logger.info("mysql 数据库连接成功");
+});
+ 
+connection.query('SELECT * from oc_oiltrade', function (error, results, fields) {
+  if (error) throw error;
+  logger.info( results);
+
+});
 
 
 var url = "mongodb://127.0.0.1"
