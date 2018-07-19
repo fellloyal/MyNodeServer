@@ -5,7 +5,9 @@ var log4js = require('log4js');//生成日志对象
 
 var MongoClient = require('mongodb').MongoClient; //生成MongoDb对象
 
-var mysql      = require('mysql');//生成mysql对象
+var mysql = require('mysql');//生成mysql对象
+
+
 
 //配置日志输出
 log4js.configure({
@@ -32,22 +34,32 @@ var logger = log4js.getLogger('info');
 logger.info("------------------启动服务程序--------------------------")
 
 
+var fs = require('fs');
+fs.readFile("./appConfig.json", function (err, filedata) {
+  filedata = JSON.parse(filedata);
+  logger.info(filedata.mongoDbConfig.mongoDbServerIp);
+  
+}
+);
 
 
 var connection = mysql.createConnection({
-  host     : 'localhost',
-  user     : 'root',
-  password : 'root',
-  database : 'OilCloudDB'
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'OilCloudDB'
 });
- 
-connection.connect(function(){
+
+connection.connect(function () {
   logger.info("mysql 数据库连接成功");
-});
- 
-connection.query('SELECT * from oc_oiltrade', function (error, results, fields) {
-  if (error) throw error;
-  logger.info( results);
+
+  connection.query('SELECT * from oc_oiltrade limit 1', function (error, results, fields) {
+    if (error) throw error;
+    logger.info(results);
+
+
+
+  });
 
 });
 
@@ -67,17 +79,18 @@ MongoClient.connect(url, function (err, db) {
 var client = mqtt.connect('mqtt://127.0.0.1');
 
 var ConnectMqttHandler = function () {
-  
+
   client.subscribe('Station/#');
   client.subscribe('Filling/#');
   client.subscribe('Sensor/#');
 
   //client.publish('oilPrice', 'Hello mqtt')
   logger.info('mqtt 服务器连接成功');
-  
+
 }
 //定义连接mqtt服务器事件
 client.on('connect', ConnectMqttHandler);
+
 
 
 //收到mqtt 消息事件
@@ -95,5 +108,11 @@ client.on('message', function (topic, message) {
 
   // client.end();
 })
+
+process.on('SIGINT', function() {
+  logger.info("进程收到 SIGINT 信号 准备退出!");
+   
+  process.exit(0);
+});
 
 console.log('系统开始监听!!!');
