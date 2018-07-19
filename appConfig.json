@@ -1,13 +1,14 @@
 {
-    "MainKey":"20180718",
+    "MainKey": "20180718",
     "mongoDbConfig": {
-        "mongoDbServerIp": "127.0.0.1",
+        "mongoDbServerUrl": "mongodb://127.0.0.1",
+        "mongoCollectionName": "oilmgdb",
         "mongoDbServerPassword": ""
     },
     "mysqlConfig": {
-        "mysqlServerIp": "127.0.0.1",
+        "mysqlServerUrl": "127.0.0.1",
+        "mysqlUserName": "root",
         "mysqlPassword": "root",
         "mysqlDataBaseName": "OilColudDB"
     }
-   
 }
