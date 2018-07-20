@@ -18,6 +18,9 @@ var configData;//声明系统配置文件对象
 
 var dbo;//mongoDb数据库连接对象
 
+
+var mqttClient;//mqtt连接对象
+
 //------从日志开始初始化------使用promise语法
 //配置日志输出
 log4js.configure({
@@ -56,54 +59,83 @@ var promiseCodes = new Promise((resolve, reject) => {
 
 promiseCodes.then((value) => {
   configData = JSON.parse(configData);
-  
+
 })
   .then((value) => {
 
-    mysqlConnection = mysql.createConnection({
-      /*
-      host: 'localhost',
-      user: 'root',
-      password: 'root',
-      database: 'OilCloudDB'
-      */
+    return mysql.createConnection({
+
       host: configData.mysqlConfig.mysqlServerUrl,
       user: configData.mysqlConfig.mysqlUserName,
       password: configData.mysqlConfig.mysqlPassword,
       database: configData.mysqlConfig.mysqlDataBaseName
     });
-    return 0;
+
   })
 
   .then((value) => {
+    mysqlConnection = value;
 
-    mysqlConnection.connect(function () {
-      logger.info("mysql server url : " + configData.mysqlConfig.mysqlServerUrl, );
-      logger.info("mysql 数据库名 : " + configData.mysqlConfig.mysqlDataBaseName);
-
-      logger.info("mysql 数据库连接成功");
-
-      mysqlConnection.query('SELECT * from oc_oiltrade limit 1', function (error, results, fields) {
-
-        logger.info(results);
-
-        return 0;
-
-      });
-
-    });
+    mysqlConnection.connect();
 
   })
-  .then((value)=>{
-    logger.info("mongoDb server url : "+configData.mongoDbConfig.mongoDbServerUrl);
-    logger.info("mongoDb 数据集名 : "+configData.mongoDbConfig.mongoCollectionName);
-    
-    MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl);
+  .then((value) => {
+    logger.info("mysql server url : " + configData.mysqlConfig.mysqlServerUrl, );
+    logger.info("mysql 数据库名 : " + configData.mysqlConfig.mysqlDataBaseName);
+
+    logger.info("mysql 数据库连接成功");
+    logger.info('\n');
+
+
+
   })
-  .then((value)=>{
+  .then((value) => {
+    logger.info("mongoDb server url : " + configData.mongoDbConfig.mongoDbServerUrl);
+    logger.info("mongoDb 数据集名 : " + configData.mongoDbConfig.mongoCollectionName);
+
+    MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl, { useNewUrlParser: true });
+  })
+  .then((value) => {
     logger.info("mongodb 服务器连接成功");
+    logger.info('\n');
   })
-  
+  .then((value) => {
+    return mqtt.connect('mqtt://127.0.0.1');
+
+  })
+  .then((value) => {
+    logger.info('mqtt 服务器连接成功');
+    mqttClient = value;
+
+    mqttClient.subscribe('Station/#');
+    logger.info('    订阅 站点 Topic Station/# ');
+    mqttClient.subscribe('Filling/#');
+    logger.info('    订阅 加注设备 Topic Filling/# ');
+    mqttClient.subscribe('Sensor/#');
+    logger.info('    订阅 传感器 Topic Sensor/# ');
+
+    logger.info('\n');
+  })
+  .then((value) => {
+
+    //收到mqtt 消息事件
+    mqttClient.on('message', function (topic, message) {
+      // message is Buffer
+
+      console.log(topic.toString());
+      console.log(message.toString("utf8"));
+      logger.info('Server get Message');
+      mqttClient.publish('Client/PC0000001', 'Server Answer');
+      var myobj = { topic: topic, message: message.toString() };
+      dbo.collection("tradeId").insertOne(myobj, function (err, res) {
+        if (err) throw err;
+      })
+
+      // client.end();
+    })
+
+  })
+
   .catch(function (error) {
     logger.info(error);
   });
@@ -112,48 +144,10 @@ promiseCodes.then((value) => {
 
 
 
-MongoClient.connect(url, function (err, db) {
-  if (err) throw err;
-  logger.info("mongodb 数据库连接成功");
-  dbo = db.db("oilmgdb");
-
-});
 
 
 
-//mqtt连接对象
-var client = mqtt.connect('mqtt://127.0.0.1');
 
-var ConnectMqttHandler = function () {
-
-  client.subscribe('Station/#');
-  client.subscribe('Filling/#');
-  client.subscribe('Sensor/#');
-
-  //client.publish('oilPrice', 'Hello mqtt')
-  logger.info('mqtt 服务器连接成功');
-
-}
-//定义连接mqtt服务器事件
-client.on('connect', ConnectMqttHandler);
-
-
-
-//收到mqtt 消息事件
-client.on('message', function (topic, message) {
-  // message is Buffer
-
-  console.log(topic.toString());
-  console.log(message.toString("utf8"));
-  logger.info('Server get Message');
-  client.publish('Client/PC0000001', 'Server Answer');
-  var myobj = { topic: topic, message: message.toString() };
-  dbo.collection("tradeId").insertOne(myobj, function (err, res) {
-    if (err) throw err;
-  })
-
-  // client.end();
-})
 
 process.on('SIGINT', function () {
   logger.info("进程收到 SIGINT 信号 准备退出!");
