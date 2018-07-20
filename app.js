@@ -9,6 +9,8 @@ var mysql = require('mysql');//生成mysql对象
 
 var fs = require('fs');//得到file对象
 
+var myCrypto = require('./formatSign');
+
 
 
 var mysqlConnection;//声明mysql连接对象
@@ -20,6 +22,22 @@ var dbo;//mongoDb数据库连接对象
 
 
 var mqttClient;//mqtt连接对象
+
+var messageHandler = function (topic, message) {
+
+  logger.info("topic : "+topic.toString());
+  logger.info("message : "+ message.toString("utf8"));
+  logger.info('\n');
+
+  /*
+  mqttClient.publish('Client/PC0000001', 'Server Answer');
+  var myobj = { topic: topic, message: message.toString() };
+  dbo.collection("tradeId").insertOne(myobj, function (err, res) {
+    if (err) throw err;
+  })
+  */
+
+}
 
 //------从日志开始初始化------使用promise语法
 //配置日志输出
@@ -114,36 +132,25 @@ promiseCodes.then((value) => {
     mqttClient.subscribe('Sensor/#');
     logger.info('    订阅 传感器 Topic Sensor/# ');
 
-    logger.info('\n');
+   
   })
   .then((value) => {
 
     //收到mqtt 消息事件
-    mqttClient.on('message', function (topic, message) {
-      // message is Buffer
+    mqttClient.on('message', messageHandler);
+    logger.info('  注册消息处理事件');
+    logger.info('\n');
 
-      console.log(topic.toString());
-      console.log(message.toString("utf8"));
-      logger.info('Server get Message');
-      mqttClient.publish('Client/PC0000001', 'Server Answer');
-      var myobj = { topic: topic, message: message.toString() };
-      dbo.collection("tradeId").insertOne(myobj, function (err, res) {
-        if (err) throw err;
-      })
+  })
+  .then((value) => {
 
-      // client.end();
-    })
-
+    //收到mqtt 消息事件
+    logger.info('系统开始监听!!!');
   })
 
   .catch(function (error) {
     logger.info(error);
   });
-
-
-
-
-
 
 
 
@@ -155,4 +162,4 @@ process.on('SIGINT', function () {
   process.exit(0);
 });
 
-console.log('系统开始监听!!!');
+

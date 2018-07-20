@@ -3,15 +3,8 @@ const crypto = require('crypto');
 class SignClass {
 
     static sign(secretKey, signStr, signMethod) {
-        let signMethodMap = {
-            HmacSHA1: "sha1",
-            HmacSHA256: "sha256"
-        };
-
-        if (!signMethodMap.hasOwnProperty(signMethod)) {
-            throw new TencentCloudSDKHttpException("signMethod invalid, signMethod only support (HmacSHA1, HmacSHA256)");
-        }
-        let hmac = crypto.createHmac(signMethodMap[signMethod], secretKey || "");
+       
+        let hmac = crypto.createHmac("sha1", secretKey || "");
         return hmac.update(Buffer.from(signStr, 'utf8')).digest('base64')
     }
 
