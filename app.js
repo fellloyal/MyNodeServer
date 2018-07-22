@@ -23,21 +23,6 @@ var dbo;//mongoDb数据库连接对象
 
 var mqttClient;//mqtt连接对象
 
-var messageHandler = function (topic, message) {
-
-  logger.info("topic : "+topic.toString());
-  logger.info("message : "+ message.toString("utf8"));
-  logger.info('\n');
-
-  /*
-  mqttClient.publish('Client/PC0000001', 'Server Answer');
-  var myobj = { topic: topic, message: message.toString() };
-  dbo.collection("tradeId").insertOne(myobj, function (err, res) {
-    if (err) throw err;
-  })
-  */
-
-}
 
 //------从日志开始初始化------使用promise语法
 //配置日志输出
@@ -63,6 +48,32 @@ log4js.configure({
 
 var logger = log4js.getLogger('info');
 logger.info("------------------启动服务程序--------------------------")
+
+
+
+
+
+function splitTopic(topic)
+{
+  let strArray = topic.split("/");
+  strArray.forEach(function(item,index)  {
+    logger.info("topic["+index+"]"+" = " + item)
+  })
+
+
+}
+
+var messageHandler = function (topic, message) {
+
+  logger.info("topic : "+topic.toString());
+  logger.info("message : "+ message.toString("utf8"));
+  splitTopic(topic.toString());
+  logger.info('\n');
+  
+
+
+}
+
 
 
 
