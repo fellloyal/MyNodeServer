@@ -94,6 +94,13 @@ var messageHandler = function (topic, message) {
 
   logger.info("messageJson.signature = " + messageJson.signature);
   logger.info("messageJson.nonce = " + messageJson.nonce);
+  logger.info("messageJson.timeStamp = " + messageJson.timeStamp);
+  logger.info("messageJson.version = " + messageJson.version);
+  logger.info("messageJson.body = " + JSON.stringify(messageJson.body));
+  logger.info("messageJson.body.flow_no = " + messageJson.body.flow_no);
+
+  
+
 
   
 
