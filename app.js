@@ -73,38 +73,129 @@ function splitTopic(topic) {
 
 }
 
+function IsChecked(messageJson) {
+
+  let messageJsonTest = messageJson;
+  if (!messageJsonTest.hasOwnProperty("signature")) {
+    logger.info("不是合法协议格式,缺少签名");
+    return false;
+  }
+
+  if (!messageJsonTest.hasOwnProperty("version")) {
+    logger.info("不是合法协议格式,缺少版本");
+    return false;
+  }
+
+  if (!messageJsonTest.hasOwnProperty("nonce")) {
+    logger.info("不是合法协议格式,缺少随机数");
+    return false;
+  }
+
+  if (!messageJsonTest.hasOwnProperty("timeStamp")) {
+    logger.info("不是合法协议格式,缺少时间戳");
+    return false;
+  }
+
+  if (!messageJsonTest.hasOwnProperty("body")) {
+    logger.info("不是合法协议格式,缺少数据体");
+    return false;
+  }
+
+  return true;
+}
+
 var messageHandler = function (topic, message) {
 
   var topicArray;//主题根据 / 分解后的数组
   var messageJson;//payload 解析为JSON字符串
 
   topicArray = topic.toString();
+
+
+
+
   messageJson = message.toString("utf8");
 
   logger.info("topic : " + topicArray);
   logger.info("message : " + messageJson);
-  topicArray = splitTopic(topicArray); 
+  topicArray = splitTopic(topicArray);
+
+  var mongodbId = [topicArray[0], topicArray[1], topicArray[2], topicArray[3]];
+  mongodbId = mongodbId.join("/");
+  logger.info("mongodbId : " + mongodbId);
+
 
   topicArray.forEach(function (item, index) {
     logger.info("topic[" + index + "]" + " = " + item)
   });
 
-  messageJson = JSON.parse(messageJson);
+
+  try {
+    messageJsonTested = JSON.parse(messageJson);
+
+  }
+  catch (err) {
+    logger.info("payload 不是合法JSON格式 ");
+    return;
+  }
 
 
-  logger.info("messageJson.signature = " + messageJson.signature);
-  logger.info("messageJson.nonce = " + messageJson.nonce);
-  logger.info("messageJson.timeStamp = " + messageJson.timeStamp);
-  logger.info("messageJson.version = " + messageJson.version);
-  logger.info("messageJson.body = " + JSON.stringify(messageJson.body));
-  logger.info("messageJson.body.flow_no = " + messageJson.body.flow_no);
 
+  if (!IsChecked(messageJsonTested))  //检查内容是否符合要求
+  {
+    return;
+  }
+
+
+
+  for (var name in messageJsonTested) {
+    if (messageJsonTested.hasOwnProperty(name)) {
+      logger.info(name.toString() + "=" + messageJsonTested[name]);
+    }
+  }
+
+  var messageObj =new Object()  ;
+  messageObj._id = mongodbId;
+  messageObj.json = messageJsonTested;
+
+  var whereStr = { "_id": mongodbId };  // 查询条件
+  dbo.collection("tradeId").find(whereStr).toArray(function (err, result) {
+    if (err) throw err;
+
+    console.log(result);
+    return result;
+  }).then((value) => {
+    if ((value.length) == 0) {
+      dbo.collection("tradeId").insertOne(messageObj,function(err,res){
+        if (err) throw err;
+        console.log("文档插入成功");
+       
+      })
+    }
+  })
+
+
+  /*
+   dbo = db.db("runoob");
+  var whereStr = {"name":'菜鸟教程'};  // 查询条件
+  dbo.collection("site").find(whereStr).toArray(function(err, result) {
+     if (err) throw err;
+     console.log(result);
+     db.close();
   
+    logger.info("messageJson.signature = " + messageJson.signature);
+    logger.info("messageJson.nonce = " + messageJson.nonce);
+    logger.info("messageJson.timeStamp = " + messageJson.timeStamp);
+    logger.info("messageJson.version = " + messageJson.version);
+    logger.info("messageJson.body = " + JSON.stringify(messageJson.body));
+    logger.info("messageJson.body.flow_no = " + messageJson.body.flow_no);
+  */
 
 
-  
 
-  
+
+
+
 
 
   logger.info('\n');
@@ -143,7 +234,7 @@ promiseCodes.then((value) => {
 
   .then((value) => {
     mysqlConnection = value;
-   
+
     mysqlConnection.connect();
 
   })
@@ -184,6 +275,10 @@ promiseCodes.then((value) => {
     mqttClient.subscribe('Sensor/#');
     logger.info('    订阅 传感器 Topic Sensor/# ');
 
+    mqttClient.subscribe('FillinToPc/#');
+    logger.info('    订阅 转发加注设备到管控 Topic FillingToPc/# ');
+    mqttClient.subscribe('SensorToPc/#');
+    logger.info('    订阅 转发传感器到管控 Topic SensorToPc/# ');
 
   })
   .then((value) => {
