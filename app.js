@@ -56,18 +56,23 @@ logger.info("------------------启动服务程序--------------------------")
 function splitTopic(topic)
 {
   let strArray = topic.split("/");
-  strArray.forEach(function(item,index)  {
-    logger.info("topic["+index+"]"+" = " + item)
-  })
+
+  return strArray;
 
 
 }
 
 var messageHandler = function (topic, message) {
 
+  var topicArray;//主题根据 / 分解后的数组
   logger.info("topic : "+topic.toString());
   logger.info("message : "+ message.toString("utf8"));
-  splitTopic(topic.toString());
+  topicArray = splitTopic(topic.toString());
+  
+  topicArray.forEach(function(item,index)  {
+    logger.info("topic["+index+"]"+" = " + item)
+  })
+
   logger.info('\n');
   
 
@@ -136,8 +141,8 @@ promiseCodes.then((value) => {
     logger.info('mqtt 服务器连接成功');
     mqttClient = value;
 
-    mqttClient.subscribe('Station/#');
-    logger.info('    订阅 站点 Topic Station/# ');
+    mqttClient.subscribe('Pc/#');
+    logger.info('    订阅 站点 Topic Pc/# ');
     mqttClient.subscribe('Filling/#');
     logger.info('    订阅 加注设备 Topic Filling/# ');
     mqttClient.subscribe('Sensor/#');
