@@ -24,6 +24,18 @@ var dbo;//mongoDb数据库连接对象
 var mqttClient;//mqtt连接对象
 
 
+
+/*
+var doQuery = function doQuery(sql, callback) {
+  this.getConnection(function (err, connection) {
+    connection.query(sql, function () {
+      callback.apply(connection, arguments);
+      connection.release();
+    });
+  })
+}.bind(pool)
+*/
+
 //------从日志开始初始化------使用promise语法
 //配置日志输出
 log4js.configure({
@@ -53,8 +65,7 @@ logger.info("------------------启动服务程序--------------------------")
 
 
 
-function splitTopic(topic)
-{
+function splitTopic(topic) {
   let strArray = topic.split("/");
 
   return strArray;
@@ -65,16 +76,32 @@ function splitTopic(topic)
 var messageHandler = function (topic, message) {
 
   var topicArray;//主题根据 / 分解后的数组
-  logger.info("topic : "+topic.toString());
-  logger.info("message : "+ message.toString("utf8"));
-  topicArray = splitTopic(topic.toString());
+  var messageJson;//payload 解析为JSON字符串
+
+  topicArray = topic.toString();
+  messageJson = message.toString("utf8");
+
+  logger.info("topic : " + topicArray);
+  logger.info("message : " + messageJson);
+  topicArray = splitTopic(topicArray); 
+
+  topicArray.forEach(function (item, index) {
+    logger.info("topic[" + index + "]" + " = " + item)
+  });
+
+  messageJson = JSON.parse(messageJson);
+
+
+  logger.info("messageJson.signature = " + messageJson.signature);
+  logger.info("messageJson.nonce = " + messageJson.nonce);
+
   
-  topicArray.forEach(function(item,index)  {
-    logger.info("topic["+index+"]"+" = " + item)
-  })
+
+  
+
 
   logger.info('\n');
-  
+
 
 
 }
@@ -109,7 +136,7 @@ promiseCodes.then((value) => {
 
   .then((value) => {
     mysqlConnection = value;
-
+   
     mysqlConnection.connect();
 
   })
@@ -118,6 +145,8 @@ promiseCodes.then((value) => {
     logger.info("mysql 数据库名 : " + configData.mysqlConfig.mysqlDataBaseName);
 
     logger.info("mysql 数据库连接成功");
+    mysqlConnection.end();
+
     logger.info('\n');
 
 
@@ -148,7 +177,7 @@ promiseCodes.then((value) => {
     mqttClient.subscribe('Sensor/#');
     logger.info('    订阅 传感器 Topic Sensor/# ');
 
-   
+
   })
   .then((value) => {
 
