@@ -265,23 +265,27 @@ var mongoPormise = new Promise((resolve, reject) => {
 })
 
 mongoPormise.then((value) => {
-  MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl, { useNewUrlParser: true }, function (err, db) {
+ return MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl, { useNewUrlParser: true }, function (err, db) {
     if (err) throw err;
     var dbo = db.db("oilmgdb");
-    var whereStr = { "_id": 'mongodbId' };  // 查询条件
-    dbo.collection("ClientInfo").find(whereStr).toArray(function (err, result) {
+    var whereStr = { "_id": mongodbId };  // 查询条件
+    
+    return dbo.collection("ClientInfo").find(whereStr).toArray(function (err, result) {
       if (err) throw err;
       logger.info("ClientInfo查询:" + result);
      
       if (result.length == 0) {
         dbo.collection("ClientInfo").insertOne(messageObj, function (err, res) {
           if (err) throw err;
-          console.log("文档插入成功");
+          logger.info("无对应ClientInfo._id,新文档插入成功");
           db.close();
+          return messageObj;
         })
-      }else
+      }
+      else
       {
-
+        logger.info("存在ClientInfo._id");
+        return result[0];
       }
       
 
@@ -289,7 +293,7 @@ mongoPormise.then((value) => {
   })
 
 }).then((value) => {
-    
+  logger.info(value);
   })
 
 

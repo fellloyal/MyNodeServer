@@ -4,11 +4,18 @@
         "mongoDbServerUrl": "mongodb://127.0.0.1:27017/oilmgdb",
         "mongoCollectionName": "oilmgdb",
         "mongoDbServerPassword": ""
+
     },
+    
     "mysqlConfig": {
         "mysqlServerUrl": "127.0.0.1",
         "mysqlUserName": "root",
         "mysqlPassword": "root",
         "mysqlDataBaseName": "OilCloudDB"
-    }
+    },
+    "ClientInfoCollection":"ClientInfo"
+    
+
+
+    
 }
