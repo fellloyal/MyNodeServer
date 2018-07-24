@@ -18,8 +18,6 @@ var mysqlConnection;//声明mysql连接对象
 var configData;//声明系统配置文件对象
 
 
-var dbo;//mongoDb数据库连接对象
-
 
 var mqttClient;//mqtt连接对象
 
@@ -60,6 +58,107 @@ log4js.configure({
 
 var logger = log4js.getLogger('info');
 logger.info("------------------启动服务程序--------------------------")
+
+
+
+
+
+
+
+
+
+var promiseCodes = new Promise((resolve, reject) => {
+
+  configData = fs.readFileSync("./appConfig.json");
+
+  resolve('ok');
+
+})
+
+promiseCodes.then((value) => {
+  configData = JSON.parse(configData);
+
+})
+  .then((value) => {
+
+    return mysql.createConnection({
+
+      host: configData.mysqlConfig.mysqlServerUrl,
+      user: configData.mysqlConfig.mysqlUserName,
+      password: configData.mysqlConfig.mysqlPassword,
+      database: configData.mysqlConfig.mysqlDataBaseName
+    });
+
+  })
+
+  .then((value) => {
+    mysqlConnection = value;
+
+    mysqlConnection.connect();
+
+  })
+  .then((value) => {
+    logger.info("mysql server url : " + configData.mysqlConfig.mysqlServerUrl, );
+    logger.info("mysql 数据库名 : " + configData.mysqlConfig.mysqlDataBaseName);
+
+    logger.info("mysql 数据库连接成功");
+    mysqlConnection.end();
+
+    logger.info('\n');
+
+
+
+  })
+  .then((value) => {
+    logger.info("mongoDb server url : " + configData.mongoDbConfig.mongoDbServerUrl);
+    logger.info("mongoDb 数据集名 : " + configData.mongoDbConfig.mongoCollectionName);
+
+    MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl, { useNewUrlParser: true });
+
+  })
+  .then((value) => {
+    logger.info("mongodb 服务器连接成功");
+    logger.info('\n');
+  })
+  .then((value) => {
+    return mqtt.connect('mqtt://127.0.0.1');
+
+  })
+  .then((value) => {
+    logger.info('mqtt 服务器连接成功');
+    mqttClient = value;
+
+    mqttClient.subscribe('Pc/#');
+    logger.info('    订阅 站点 Topic Pc/# ');
+    mqttClient.subscribe('Filling/#');
+    logger.info('    订阅 加注设备 Topic Filling/# ');
+    mqttClient.subscribe('Sensor/#');
+    logger.info('    订阅 传感器 Topic Sensor/# ');
+
+    mqttClient.subscribe('FillinToPc/#');
+    logger.info('    订阅 转发加注设备到管控 Topic FillingToPc/# ');
+    mqttClient.subscribe('SensorToPc/#');
+    logger.info('    订阅 转发传感器到管控 Topic SensorToPc/# ');
+
+  })
+  .then((value) => {
+
+    //收到mqtt 消息事件
+    mqttClient.on('message', messageHandler);
+    logger.info('  注册消息处理事件');
+    logger.info('\n');
+
+  })
+  .then((value) => {
+
+    //收到mqtt 消息事件
+    logger.info('系统开始监听!!!');
+  })
+
+  .catch(function (error) {
+    logger.info(error);
+  });
+
 
 
 
@@ -154,44 +253,44 @@ var messageHandler = function (topic, message) {
     }
   }
 
-  var messageObj =new Object()  ;
+  var messageObj = new Object();
   messageObj._id = mongodbId;
   messageObj.json = messageJsonTested;
 
-  var whereStr = { "_id": mongodbId };  // 查询条件
-  dbo.collection("tradeId").find(whereStr).toArray(function (err, result) {
-    if (err) throw err;
 
-    console.log(result);
-    return result;
-  }).then((value) => {
-    if ((value.length) == 0) {
-      dbo.collection("tradeId").insertOne(messageObj,function(err,res){
-        if (err) throw err;
-        console.log("文档插入成功");
-       
-      })
-    }
+var mongoPormise = new Promise((resolve, reject) => {
+
+  resolve('ok');
+
+})
+
+mongoPormise.then((value) => {
+  MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl, { useNewUrlParser: true }, function (err, db) {
+    if (err) throw err;
+    var dbo = db.db("oilmgdb");
+    var whereStr = { "_id": 'mongodbId' };  // 查询条件
+    dbo.collection("ClientInfo").find(whereStr).toArray(function (err, result) {
+      if (err) throw err;
+      logger.info("ClientInfo查询:" + result);
+     
+      if (result.length == 0) {
+        dbo.collection("ClientInfo").insertOne(messageObj, function (err, res) {
+          if (err) throw err;
+          console.log("文档插入成功");
+          db.close();
+        })
+      }else
+      {
+
+      }
+      
+
+    });
   })
 
-
-  /*
-   dbo = db.db("runoob");
-  var whereStr = {"name":'菜鸟教程'};  // 查询条件
-  dbo.collection("site").find(whereStr).toArray(function(err, result) {
-     if (err) throw err;
-     console.log(result);
-     db.close();
-  
-    logger.info("messageJson.signature = " + messageJson.signature);
-    logger.info("messageJson.nonce = " + messageJson.nonce);
-    logger.info("messageJson.timeStamp = " + messageJson.timeStamp);
-    logger.info("messageJson.version = " + messageJson.version);
-    logger.info("messageJson.body = " + JSON.stringify(messageJson.body));
-    logger.info("messageJson.body.flow_no = " + messageJson.body.flow_no);
-  */
-
-
+}).then((value) => {
+    
+  })
 
 
 
@@ -203,105 +302,6 @@ var messageHandler = function (topic, message) {
 
 
 }
-
-
-
-
-
-var promiseCodes = new Promise((resolve, reject) => {
-
-  configData = fs.readFileSync("./appConfig.json");
-
-  resolve('ok');
-
-})
-
-promiseCodes.then((value) => {
-  configData = JSON.parse(configData);
-
-})
-  .then((value) => {
-
-    return mysql.createConnection({
-
-      host: configData.mysqlConfig.mysqlServerUrl,
-      user: configData.mysqlConfig.mysqlUserName,
-      password: configData.mysqlConfig.mysqlPassword,
-      database: configData.mysqlConfig.mysqlDataBaseName
-    });
-
-  })
-
-  .then((value) => {
-    mysqlConnection = value;
-
-    mysqlConnection.connect();
-
-  })
-  .then((value) => {
-    logger.info("mysql server url : " + configData.mysqlConfig.mysqlServerUrl, );
-    logger.info("mysql 数据库名 : " + configData.mysqlConfig.mysqlDataBaseName);
-
-    logger.info("mysql 数据库连接成功");
-    mysqlConnection.end();
-
-    logger.info('\n');
-
-
-
-  })
-  .then((value) => {
-    logger.info("mongoDb server url : " + configData.mongoDbConfig.mongoDbServerUrl);
-    logger.info("mongoDb 数据集名 : " + configData.mongoDbConfig.mongoCollectionName);
-
-    MongoClient.connect(configData.mongoDbConfig.mongoDbServerUrl, { useNewUrlParser: true });
-  })
-  .then((value) => {
-    logger.info("mongodb 服务器连接成功");
-    logger.info('\n');
-  })
-  .then((value) => {
-    return mqtt.connect('mqtt://127.0.0.1');
-
-  })
-  .then((value) => {
-    logger.info('mqtt 服务器连接成功');
-    mqttClient = value;
-
-    mqttClient.subscribe('Pc/#');
-    logger.info('    订阅 站点 Topic Pc/# ');
-    mqttClient.subscribe('Filling/#');
-    logger.info('    订阅 加注设备 Topic Filling/# ');
-    mqttClient.subscribe('Sensor/#');
-    logger.info('    订阅 传感器 Topic Sensor/# ');
-
-    mqttClient.subscribe('FillinToPc/#');
-    logger.info('    订阅 转发加注设备到管控 Topic FillingToPc/# ');
-    mqttClient.subscribe('SensorToPc/#');
-    logger.info('    订阅 转发传感器到管控 Topic SensorToPc/# ');
-
-  })
-  .then((value) => {
-
-    //收到mqtt 消息事件
-    mqttClient.on('message', messageHandler);
-    logger.info('  注册消息处理事件');
-    logger.info('\n');
-
-  })
-  .then((value) => {
-
-    //收到mqtt 消息事件
-    logger.info('系统开始监听!!!');
-  })
-
-  .catch(function (error) {
-    logger.info(error);
-  });
-
-
-
-
 
 process.on('SIGINT', function () {
   logger.info("进程收到 SIGINT 信号 准备退出!");
